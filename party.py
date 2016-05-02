@@ -171,8 +171,14 @@ class MagentoWebsiteParty(ModelSQL, ModelView):
         """
         super(MagentoWebsiteParty, cls).__setup__()
         cls._error_messages.update({
-            'party_exists': 'A party must be unique in a channel'
+            'party_exists': 'A party must be unique in a channel',
+            'unique_party_per_channel':
+            'Party and Magento ID should be unique per channel.'
         })
+        cls._sql_constraints += [
+            ('unique_party', 'UNIQUE(magento_id, channel)',
+             'unique_party_per_channel')
+        ]
 
     @classmethod
     def check_unique_party(cls, records):
