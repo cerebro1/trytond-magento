@@ -221,8 +221,7 @@ class Channel:
 
         return channel
 
-    @classmethod
-    def import_shipping_carriers(cls, channels):
+    def import_shipping_carriers(self):
         """
         Create shipping carriers by importing data from Magento.
 
@@ -230,34 +229,34 @@ class Channel:
         """
         SaleChannelCarrier = Pool().get('sale.channel.carrier')
 
-        for channel in channels:
-            assert channel.source == 'magento'
+        if self.source != 'magento':
+            return super(Channel, self).import_shipping_carriers()
 
-            with Transaction().set_context({'current_channel': channel.id}):
-                with OrderConfig(
-                    channel.magento_url, channel.magento_api_user,
-                    channel.magento_api_key
-                ) as order_config_api:
-                    carriers_data = order_config_api.get_shipping_methods()
+        with Transaction().set_context({'current_channel': self.id}):
+            with OrderConfig(
+                self.magento_url, self.magento_api_user,
+                self.magento_api_key
+            ) as order_config_api:
+                carriers_data = order_config_api.get_shipping_methods()
 
-            carriers = []
-            for data in carriers_data:
-                carrier = SaleChannelCarrier.search([
-                    ('code', '=', data['code']),
-                    ('channel', '=', channel.id),
-                ])
-                if carrier:
-                    continue
+        carriers = []
+        for data in carriers_data:
+            carrier = SaleChannelCarrier.search([
+                ('code', '=', data['code']),
+                ('channel', '=', self.id),
+            ])
+            if carrier:
+                continue
 
-                carrier = {
-                    'name': data['label'],
-                    'code': data['code'],
-                    'channel': channel,
-                }
-                if carrier not in carriers:
-                    carriers.append(carrier)
+            carrier = {
+                'name': data['label'],
+                'code': data['code'],
+                'channel': self,
+            }
+            if carrier not in carriers:
+                carriers.append(carrier)
 
-            SaleChannelCarrier.create(carriers)
+        SaleChannelCarrier.create(carriers)
 
     def import_products(self):
         """
